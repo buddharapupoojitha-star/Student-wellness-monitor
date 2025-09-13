@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Menta – Daily Wellness & Mood Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1: 255 247 237;
+      --bg2: 237 242 255;
+      --brand: 99 102 241;
+      --brand-2: 16 185 129;
+      --ink: 17 24 39;
+    }
+    html,body{height:100%}
+    body{font-family:'Inter',system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";}
+    /* Soft gradient background */
+    .app-bg{
+      background: radial-gradient(1200px 600px at 10% -10%, rgba(16,185,129,.12), transparent 50%),
+                  radial-gradient(900px 500px at 110% 10%, rgba(99,102,241,.10), transparent 50%),
+                  linear-gradient(180deg, rgb(var(--bg2)) 0%, rgb(var(--bg1)) 100%);
+    }
+    /* Nice focus ring */
+    .focus-ring:focus-visible{ outline: 3px solid rgba(99,102,241,.35); outline-offset: 2px;}
+    /* Smooth cards */
+    .glass{
+      background: rgba(255,255,255,.75);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,.06);
+    }
+    /* Micro animations */
+    .btn{ transition: transform .08s ease, box-shadow .2s ease;}
+    .btn:active{ transform: translateY(1px) scale(.99);}
+    .chip{ transition: background .2s ease, color .2s ease, transform .08s ease;}
+    .chip:active{ transform: scale(.98);}
+    .tab{ transition: color .2s ease, background .2s ease;}
+    .fade-in{ animation: fade .35s ease;}
+    @keyframes fade{from{opacity:.0; transform: translateY(4px)} to{opacity:1; transform: none}}
+    /* Chart tooltip */
+    .tooltip{
+      position: absolute;
+      pointer-events: none;
+      transform: translate(-50%,-120%);
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body class="app-bg text-slate-800 min-h-screen">
+  <div class="max-w-6xl mx-auto px-5 md:px-8 py-6 md:py-10">
+    <!-- Header -->
+    <header class="flex items-center justify-between gap-4 mb-6 md:mb-8">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-indigo-500 grid place-items-center text-white text-xl">🧘</div>
+        <div>
+          <h1 class="text-xl md:text-2xl font-extrabold tracking-tight">Menta</h1>
+          <p class="text-sm text-slate-500 -mt-0.5">Daily mood, insights, and gentle progress</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="exportBtn" class="btn focus-ring px-3 md:px-4 py-2 rounded-lg bg-white/80 hover:bg-white text-slate-700 text-sm font-semibold shadow-sm">Export Data</button>
+        <button id="resetBtn" class="btn focus-ring px-3 md:px-4 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-sm font-semibold shadow-sm">Reset</button>
+      </div>
+    </header>
+
+    <!-- Tabs -->
+    <nav class="glass rounded-xl p-2 mb-5 md:mb-8">
+      <div class="grid grid-cols-3 gap-1">
+        <button data-tab="checkin" class="tab px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm md:text-base font-semibold">Daily Check-in</button>
+        <button data-tab="insights" class="tab px-4 py-2 rounded-lg text-indigo-700 hover:bg-indigo-50 text-sm md:text-base font-semibold">Insights</button>
+        <button data-tab="settings" class="tab px-4 py-2 rounded-lg text-indigo-700 hover:bg-indigo-50 text-sm md:text-base font-semibold">Settings</button>
+      </div>
+    </nav>
+
+    <!-- Content -->
+    <section id="tab-checkin" class="fade-in">
+      <div class="grid lg:grid-cols-3 gap-6 lg:gap-8">
+        <!-- Left: Mood & Note -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Mood scale -->
+          <div class="glass rounded-2xl p-5 md:p-6">
+            <div class="flex items-center justify-between">
+              <h2 class="text-lg md:text-xl font-bold">How are you feeling today?</h2>
+              <span id="checkinDate" class="text-sm text-slate-500"></span>
+            </div>
+            <div class="mt-4 grid grid-cols-5 gap-2">
+              <!-- Mood chips -->
+              <button class="chip mood-chip rounded-xl px-3 py-3 md:px-4 md:py-4 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold flex flex-col items-center gap-1" data-score="1">
+                <span class="text-2xl">😞</span><span class="text-xs md:text-sm">Low</span>
+              </button>
+              <button class="chip mood-chip rounded-xl px-3 py-3 md:px-4 md:py-4 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold flex flex-col items-center gap-1" data-score="2">
+                <span class="text-2xl">😕</span><span class="text-xs md:text-sm">Meh</span>
+              </button>
+              <button class="chip mood-chip rounded-xl px-3 py-3 md:px-4 md:py-4 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold flex flex-col items-center gap-1" data-score="3">
+                <span class="text-2xl">🙂</span><span class="text-xs md:text-sm">Okay</span>
+              </button>
+              <button class="chip mood-chip rounded-xl px-3 py-3 md:px-4 md:py-4 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold flex flex-col items-center gap-1" data-score="4">
+                <span class="text-2xl">😊</span><span class="text-xs md:text-sm">Good</span>
+              </button>
+              <button class="chip mood-chip rounded-xl px-3 py-3 md:px-4 md:py-4 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold flex flex-col items-center gap-1" data-score="5">
+                <span class="text-2xl">🤩</span><span class="text-xs md:text-sm">Great</span>
+              </button>
+            </div>
+
+            <!-- Optional quick tags -->
+            <div class="mt-4">
+              <p class="text-sm text-slate-600 mb-2">What best describes your day?</p>
+              <div id="tagsWrap" class="flex flex-wrap gap-2">
+                <!-- tags will render -->
+              </div>
+            </div>
+
+            <!-- Note input -->
+            <div class="mt-4">
+              <label for="note" class="text-sm text-slate-600">Add a short note (optional)</label>
+              <textarea id="note" rows="3" class="focus-ring w-full mt-2 rounded-xl border border-slate-200 bg-white/90 p-3 text-sm" placeholder="Write a few words about your day..."></textarea>
+            </div>
+
+            <!-- Save -->
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2 text-sm">
+                <span class="text-slate-500">Sentiment:</span>
+                <span id="sentimentBadge" class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 font-semibold">—</span>
+              </div>
+              <button id="saveBtn" class="btn focus-ring px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-md">Save Check-in</button>
+            </div>
+          </div>
+
+          <!-- Recommendations -->
+          <div class="glass rounded-2xl p-5 md:p-6">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg md:text-xl font-bold">Personalized Recommendations</h3>
+              <button id="refreshRec" class="btn text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg text-sm font-semibold">Refresh</button>
+            </div>
+            <p class="text-sm text-slate-500 mt-1">Suggestions adapt to your mood and recent trends.</p>
+            <div id="recommendations" class="mt-4 grid md:grid-cols-2 gap-3">
+              <!-- rec cards -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Streak & Quick actions -->
+        <aside class="space-y-6">
+          <!-- Streak -->
+          <div class="glass rounded-2xl p-5 md:p-6">
+            <h3 class="text-lg font-bold">Your Streak</h3>
+            <div class="flex items-center gap-4 mt-3">
+              <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-indigo-500 grid place-items-center text-2xl text-white">🔥</div>
+              <div>
+                <div class="text-3xl font-extrabold" id="streakCount">0</div>
+                <div class="text-sm text-slate-500">days in a row</div>
+              </div>
+            </div>
+            <div class="mt-4">
+              <div id="streakBar" class="h-2 rounded-full bg-slate-200 overflow-hidden">
+                <div id="streakFill" class="h-full bg-emerald-500 rounded-full" style="width:0%"></div>
+              </div>
+              <div class="flex justify-between text-xs text-slate-500 mt-1.5">
+                <span>0</span><span>7</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick actions -->
+          <div class="glass rounded-2xl p-5 md:p-6">
+            <h3 class="text-lg font-bold">Quick Care</h3>
+            <div class="grid grid-cols-2 gap-3 mt-3">
+              <button id="quickBreath" class="chip px-4 py-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold">2‑min Breathing</button>
+              <button id="quickWalk" class="chip px-4 py-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold">5‑min Walk</button>
+              <button id="quickJournal" class="chip px-4 py-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold">Gratitude</button>
+              <button id="quickStretch" class="chip px-4 py-3 rounded-xl bg-fuchsia-50 hover:bg-fuchsia-100 text-fuchsia-700 font-semibold">Stretch</button>
+            </div>
+            <p id="quickMsg" class="text-sm text-slate-500 mt-3"></p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Insights Tab -->
+    <section id="tab-insights" class="hidden fade-in">
+      <div class="grid lg:grid-cols-3 gap-6 lg:gap-8">
+        <div class="lg:col-span-2 glass rounded-2xl p-5 md:p-6">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg md:text-xl font-bold">Mood Trend</h2>
+            <div class="flex items-center gap-2">
+              <button class="range-btn btn px-3 py-1.5 rounded-lg bg-white/80 hover:bg-white text-sm font-semibold" data-range="7">7d</button>
+              <button class="range-btn btn px-3 py-1.5 rounded-lg bg-white/60 hover:bg-white text-sm font-semibold" data-range="14">14d</button>
+              <button class="range-btn btn px-3 py-1.5 rounded-lg bg-white/60 hover:bg-white text-sm font-semibold" data-range="30">30d</button>
+            </div>
+          </div>
+          <div class="relative mt-4">
+            <canvas id="trendCanvas" class="w-full" height="200"></canvas>
+            <div id="chartTooltip" class="tooltip hidden bg-slate-800 text-white text-xs px-2 py-1 rounded-md shadow"></div>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Tip: Hover or tap points to see details.</p>
+        </div>
+
+        <div class="space-y-6">
+          <div class="glass rounded-2xl p-5 md:p-6">
+            <h3 class="text-lg font-bold">Weekly Summary</h3>
+            <div class="mt-3 grid grid-cols-2 gap-3">
+              <div class="rounded-xl bg-white/80 p-4">
+                <div class="text-xs text-slate-500">Average mood</div>
+                <div id="avgMood" class="text-2xl font-extrabold mt-1">—</div>
+              </div>
+              <div class="rounded-xl bg-white/80 p-4">
+                <div class="text-xs text-slate-500">Best day</div>
+                <div id="bestDay" class="text-base font-semibold mt-1">—</div>
+              </div>
+              <div class="rounded-xl bg-white/80 p-4">
+                <div class="text-xs text-slate-500">Most used tag</div>
+                <div id="topTag" class="text-base font-semibold mt-1">—</div>
+              </div>
+              <div class="rounded-xl bg-white/80 p-4">
+                <div class="text-xs text-slate-500">Entries</div>
+                <div id="entryCount" class="text-2xl font-extrabold mt-1">0</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass rounded-2xl p-5 md:p-6">
+            <h3 class="text-lg font-bold">Recent Check-ins</h3>
+            <ul id="recentList" class="mt-3 space-y-2">
+              <!-- items -->
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Settings Tab -->
+    <section id="tab-settings" class="hidden fade-in">
+      <div class="grid md:grid-cols-2 gap-6 lg:gap-8">
+        <div class="glass rounded-2xl p-5 md:p-6">
+          <h2 class="text-lg md:text-xl font-bold">Preferences</h2>
+          <div class="mt-4 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-semibold">Daily Reminder</div>
+                <div class="text-sm text-slate-500">Get a subtle nudge at your chosen time</div>
+              </div>
+              <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="reminderToggle" class="sr-only peer">
+                <span class="w-11 h-6 bg-slate-300 rounded-full peer-checked:bg-indigo-600 relative transition-all">
+                  <span class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:left-6"></span>
+                </span>
+              </label>
+            </div>
+            <div id="reminderTimeWrap" class="hidden">
+              <label class="text-sm text-slate-600">Pick a time</label>
+              <input id="reminderTime" type="time" class="focus-ring mt-2 w-full rounded-xl border border-slate-200 bg-white/90 p-2.5 text-sm"/>
+              <p class="text-xs text-slate-500 mt-1">This is a demo reminder shown inside the page; it won't send notifications outside this tab.</p>
+            </div>
+
+            <div>
+              <div class="font-semibold">Wellness Focus</div>
+              <div class="text-sm text-slate-500">Prioritize recommendations</div>
+              <div id="focusWrap" class="flex flex-wrap gap-2 mt-2">
+                <!-- focus chips render -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass rounded-2xl p-5 md:p-6">
+          <h2 class="text-lg md:text-xl font-bold">Data</h2>
+          <p class="text-sm text-slate-600">Your entries are saved locally in your browser.</p>
+          <div class="mt-3 grid grid-cols-2 gap-3">
+            <button id="importBtn" class="btn px-4 py-2 rounded-xl bg-white hover:bg-white text-slate-700 font-semibold shadow">Import</button>
+            <label class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow cursor-pointer text-center">
+              <input id="importFile" type="file" accept="application/json" class="hidden">
+              Choose File
+            </label>
+          </div>
+          <ul class="list-disc pl-5 text-xs text-slate-500 mt-3 space-y-1">
+            <li>Export creates a JSON file you can keep.</li>
+            <li>Import replaces your current data.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Demo Reminder Banner -->
+    <div id="reminderBanner" class="fixed left-1/2 -translate-x-1/2 bottom-5 z-50 hidden">
+      <div class="glass rounded-2xl px-4 py-3 flex items-center gap-3 shadow-lg">
+        <span class="text-xl">⏰</span>
+        <div>
+          <div class="font-semibold">Time for your daily check-in</div>
+          <div class="text-sm text-slate-600">Open Daily Check-in to log your mood</div>
+        </div>
+        <button id="dismissReminder" class="ml-2 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold">Open</button>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center text-xs text-slate-500 mt-10">
+      This is a demo wellness app. It does not provide medical advice.
+    </footer>
+  </div>
+
+  <script>
+    // Data Model
+    const LS_KEY = 'menta_entries_v1';
+    const PREF_KEY = 'menta_prefs_v1';
+
+    const defaultTags = ['Work','Family','Social','Health','Sleep','Exercise','Nature','Hobby','Study','Travel','Mindful','Busy','Calm','Anxious','Grateful'];
+    const defaultFocus = ['Mindfulness','Movement','Sleep','Social','Nutrition','Journaling'];
+
+    let state = {
+      entries: loadEntries(),
+      prefs: loadPrefs(),
+      currentMood: null,
+      currentTags: new Set(),
+      rangeDays: 7
+    };
+
+    // Elements
+    const tabs = document.querySelectorAll('button[data-tab]');
+    const tabSections = {
+      checkin: document.getElementById('tab-checkin'),
+      insights: document.getElementById('tab-insights'),
+      settings: document.getElementById('tab-settings')
+    };
+    const dateEl = document.getElementById('checkinDate');
+    const moodChips = document.querySelectorAll('.mood-chip');
+    const noteEl = document.getElementById('note');
+    const sentimentBadge = document.getElementById('sentimentBadge');
+    const saveBtn = document.getElementById('saveBtn');
+    const tagsWrap = document.getElementById('tagsWrap');
+    const recWrap = document.getElementById('recommendations');
+    const refreshRec = document.getElementById('refreshRec');
+    const streakCount = document.getElementById('streakCount');
+    const streakFill = document.getElementById('streakFill');
+    const quickMsg = document.getElementById('quickMsg');
+
+    const trendCanvas = document.getElementById('trendCanvas');
+    const tooltip = document.getElementById('chartTooltip');
+    const rangeBtns = document.querySelectorAll('.range-btn');
+    const avgMood = document.getElementById('avgMood');
+    const bestDay = document.getElementById('bestDay');
+    const topTag = document.getElementById('topTag');
+    const entryCount = document.getElementById('entryCount');
+    const recentList = document.getElementById('recentList');
+
+    const reminderToggle = document.getElementById('reminderToggle');
+    const reminderTimeWrap = document.getElementById('reminderTimeWrap');
+    const reminderTime = document.getElementById('reminderTime');
+    const focusWrap = document.getElementById('focusWrap');
+    const reminderBanner = document.getElementById('reminderBanner');
+    const dismissReminder = document.getElementById('dismissReminder');
+
+    const exportBtn = document.getElementById('exportBtn');
+    const importBtn = document.getElementById('importBtn');
+    const importFile = document.getElementById('importFile');
+    const resetBtn = document.getElementById('resetBtn');
+
+    // Init
+    init();
+
+    function init(){
+      dateEl.textContent = new Date().toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'});
+      renderTags();
+      renderFocus();
+      applyPrefsUI();
+      hydrateTodaySelection();
+      renderRecommendations();
+      updateStreak();
+      drawTrend();
+      updateInsights();
+      renderRecent();
+      setupEvents();
+      startReminderLoop();
+    }
+
+    function loadEntries(){
+      try{
+        const raw = localStorage.getItem(LS_KEY);
+        return raw ? JSON.parse(raw) : [];
+      }catch(e){ return []; }
+    }
+
+    function loadPrefs(){
+      try{
+        const raw = localStorage.getItem(PREF_KEY);
+        return raw ? JSON.parse(raw) : { reminder:false, time:"09:00", focus: ['Mindfulness','Sleep'] };
+      }catch(e){ return { reminder:false, time:"09:00", focus: ['Mindfulness','Sleep'] }; }
+    }
+
+    function saveEntries(){ localStorage.setItem(LS_KEY, JSON.stringify(state.entries)); }
+    function savePrefs(){ localStorage.setItem(PREF_KEY, JSON.stringify(state.prefs)); }
+
+    // Tabs
+    tabs.forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        tabs.forEach(b=> b.classList.remove('bg-indigo-600','text-white'));
+        btn.classList.add('bg-indigo-600','text-white');
+        Object.values(tabSections).forEach(s=> s.classList.add('hidden'));
+        const key = btn.dataset.tab;
+        tabSections[key].classList.remove('hidden');
+        if(key==='insights'){ drawTrend(); updateInsights(); renderRecent(); }
+      });
+    });
+
+    // Mood selection
+    moodChips.forEach(chip=>{
+      chip.addEventListener('click', ()=>{
+        moodChips.forEach(c=> c.classList.remove('bg-indigo-600','text-white'));
+        chip.classList.add('bg-indigo-600','text-white');
+        state.currentMood = Number(chip.dataset.score);
+        updateSentimentPreview();
+        renderRecommendations();
+      });
+    });
+
+    // Tags
+    function renderTags(){
+      tagsWrap.innerHTML = '';
+      defaultTags.slice(0,14).forEach(tag=>{
+        const btn = document.createElement('button');
+        btn.className = 'chip px-3 py-1.5 rounded-full bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-sm';
+        btn.textContent = tag;
+        btn.addEventListener('click', ()=>{
+          if(state.currentTags.has(tag)){ state.currentTags.delete(tag); btn.classList.remove('bg-indigo-50','text-indigo-700','border-indigo-200'); }
+          else { state.currentTags.add(tag); btn.classList.add('bg-indigo-50','text-indigo-700','border-indigo-200'); }
+          renderRecommendations();
+        });
+        tagsWrap.appendChild(btn);
+      });
+    }
+
+    // Sentiment (simple on-page analysis)
+    function analyzeSentiment(text, moodScore){
+      // Very lightweight heuristic: keywords & mood blend to a label and color
+      const t = (text||'').toLowerCase();
+      const posWords = ['good','great','grateful','calm','win','proud','love','fun','happy','progress','rested'];
+      const negWords = ['bad','tired','sad','anxious','stress','angry','overwhelmed','worried','lonely','pain'];
+      let score = 0;
+      posWords.forEach(w=> { if(t.includes(w)) score += 1; });
+      negWords.forEach(w=> { if(t.includes(w)) score -= 1; });
+      score += (moodScore||0) - 3; // center mood around 0
+
+      if(score >= 2) return {label:'Positive', color:'bg-emerald-100 text-emerald-700'};
+      if(score <= -2) return {label:'Negative', color:'bg-rose-100 text-rose-700'};
+      return {label:'Neutral', color:'bg-amber-100 text-amber-700'};
+    }
+
+    function updateSentimentPreview(){
+      const {label, color} = analyzeSentiment(noteEl.value, state.currentMood);
+      sentimentBadge.className = 'px-2.5 py-1 rounded-full font-semibold ' + color;
+      sentimentBadge.textContent = label;
+    }
+    noteEl.addEventListener('input', updateSentimentPreview);
+
+    // Save entry
+    saveBtn.addEventListener('click', ()=>{
+      if(!state.currentMood){
+        flashMessage('Please select your mood to save.');
+        return;
+      }
+      const todayKey = new Date().toISOString().slice(0,10);
+      const entry = {
+        id: cryptoRandomId(),
+        date: todayKey,
+        mood: state.currentMood,
+        note: noteEl.value.trim(),
+        tags: Array.from(state.currentTags),
+        sentiment: analyzeSentiment(noteEl.value, state.currentMood).label,
+        createdAt: Date.now()
+      };
+      // Upsert by date (only one entry per day)
+      const idx = state.entries.findIndex(e=> e.date===todayKey);
+      if(idx>=0){ state.entries[idx] = {...state.entries[idx], ...entry}; }
+      else { state.entries.push(entry); }
+
+      // Keep recent first
+      state.entries.sort((a,b)=> b.createdAt - a.createdAt);
+      saveEntries();
+
+      flashMessage('Check-in saved!');
+      updateStreak();
+      drawTrend();
+      updateInsights();
+      renderRecent();
+      hydrateTodaySelection();
+    });
+
+    function hydrateTodaySelection(){
+      const todayKey = new Date().toISOString().slice(0,10);
+      const today = state.entries.find(e=> e.date===todayKey);
+      // Reset UI
+      moodChips.forEach(c=> c.classList.remove('bg-indigo-600','text-white'));
+      state.currentTags = new Set();
+      Array.from(tagsWrap.children).forEach(b=> b.classList.remove('bg-indigo-50','text-indigo-700','border-indigo-200'));
+
+      if(today){
+        const selected = Array.from(moodChips).find(c=> Number(c.dataset.score)===today.mood);
+        if(selected) selected.classList.add('bg-indigo-600','text-white');
+        state.currentMood = today.mood;
+        noteEl.value = today.note || '';
+        (today.tags||[]).forEach(t=>{
+          state.currentTags.add(t);
+          // toggle chip visual
+          Array.from(tagsWrap.children).forEach(b=> {
+            if(b.textContent===t) b.classList.add('bg-indigo-50','text-indigo-700','border-indigo-200');
+          });
+        });
+      }else{
+        state.currentMood = null;
+        noteEl.value = '';
+      }
+      updateSentimentPreview();
+    }
+
+    // Recommendations (rule-based demo)
+    function renderRecommendations(){
+      const mood = state.currentMood;
+      const tags = Array.from(state.currentTags);
+      const focus = state.prefs.focus || [];
+      const pool = [
+        {k:'Mindfulness', t:'Try a 3‑minute breathing session', d:'Slow inhale 4s, hold 2s, exhale 6s', icon:'🫁'},
+        {k:'Movement', t:'Take a brisk 10‑minute walk', d:'Sunlight boosts mood & sleep', icon:'🚶'},
+        {k:'Sleep', t:'Wind-down routine tonight', d:'Dim lights, no screens 30 mins before bed', icon:'😴'},
+        {k:'Social', t:'Send a kind message', d:'Reach out to someone you appreciate', icon:'💬'},
+        {k:'Nutrition', t:'Hydrate and snack smart', d:'Water + fruit or nuts', icon:'🥤'},
+        {k:'Journaling', t:'Write 3 good things', d:'Gratitude shifts perspective', icon:'📓'},
+      ];
+      // prioritization
+      let suggestions = [];
+      if(mood && mood<=2) suggestions.push(pool.find(p=>p.k==='Mindfulness'), pool.find(p=>p.k==='Journaling'));
+      if(mood && mood>=4) suggestions.push(pool.find(p=>p.k==='Social'));
+      if(tags.includes('Sleep')) suggestions.push(pool.find(p=>p.k==='Sleep'));
+      if(tags.includes('Exercise')) suggestions.push(pool.find(p=>p.k==='Movement'));
+      // add focus-based
+      focus.forEach(f=>{
+        const item = pool.find(p=> p.k===f);
+        if(item) suggestions.push(item);
+      });
+      // unique + limit
+      const uniq = [];
+      const seen = new Set();
+      suggestions.concat(pool).forEach(s=>{
+        if(s && !seen.has(s.k)){ seen.add(s.k); uniq.push(s); }
+      });
+      const final = uniq.slice(0,4);
+
+      recWrap.innerHTML = '';
+      final.forEach(r=>{
+        const card = document.createElement('div');
+        card.className = 'rounded-xl p-4 bg-white/80 border border-slate-100 flex items-start gap-3';
+        card.innerHTML = `
+          <div class="text-2xl">${r.icon}</div>
+          <div class="flex-1">
+            <div class="font-semibold">${r.t}</div>
+            <div class="text-sm text-slate-600">${r.d}</div>
+          </div>
+          <button class="btn px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-sm font-semibold">Start</button>
+        `;
+        recWrap.appendChild(card);
+      });
+    }
+    refreshRec.addEventListener('click', renderRecommendations);
+
+    // Quick actions mini feedback
+    const quickMap = {
+      quickBreath: 'Great choice. Follow your breath for 2 minutes.',
+      quickWalk: 'Enjoy a short walk. Notice sights and sounds.',
+      quickJournal: 'Write 3 things you’re grateful for.',
+      quickStretch: 'Gently stretch shoulders & neck.'
+    };
+    Object.keys(quickMap).forEach(id=>{
+      document.getElementById(id).addEventListener('click', ()=>{
+        quickMsg.textContent = quickMap[id];
+        setTimeout(()=> quickMsg.textContent = '', 4000);
+      });
+    });
+
+    // Streak
+    function updateStreak(){
+      const dates = new Set(state.entries.map(e=> e.date));
+      let streak = 0;
+      const today = new Date();
+      for(let i=0;i<365;i++){
+        const d = new Date(today);
+        d.setDate(today.getDate()-i);
+        const key = d.toISOString().slice(0,10);
+        if(dates.has(key)) streak++;
+        else break;
+      }
+      streakCount.textContent = streak;
+      const pct = Math.min(100, (streak/7)*100);
+      streakFill.style.width = pct + '%';
+    }
+
+    // Trend Chart (vanilla canvas)
+    function drawTrend(){
+      const days = state.rangeDays || 7;
+      const ctx = trendCanvas.getContext('2d');
+      const W = trendCanvas.clientWidth * window.devicePixelRatio;
+      const H = trendCanvas.height * window.devicePixelRatio;
+      trendCanvas.width = W; trendCanvas.height = H;
+
+      // Collect last N days
+      const map = new Map(state.entries.map(e=> [e.date, e]));
+      const points = [];
+      for(let i=days-1;i>=0;i--){
+        const d = new Date();
+        d.setDate(d.getDate()-i);
+        const key = d.toISOString().slice(0,10);
+        const e = map.get(key);
+        const mood = e ? e.mood : null;
+        points.push({key, label: d.toLocaleDateString(undefined,{month:'short', day:'numeric'}), mood});
+      }
+
+      // Clear
+      ctx.clearRect(0,0,W,H);
+      // Axes padding
+      const pad = 28 * window.devicePixelRatio;
+      const plotW = W - pad*2;
+      const plotH = H - pad*2;
+
+      // Grid
+      ctx.strokeStyle = 'rgba(100,116,139,.2)';
+      ctx.lineWidth = 1;
+      for(let i=0;i<=4;i++){
+        const y = pad + (plotH/4)*i;
+        ctx.beginPath();
+        ctx.moveTo(pad, y);
+        ctx.lineTo(W-pad, y);
+        ctx.stroke();
+      }
+
+      // Labels
+      ctx.fillStyle = 'rgba(30,41,59,.8)';
+      ctx.font = `${12 * window.devicePixelRatio}px Inter, system-ui`;
+      ctx.textAlign = 'right';
+      ctx.fillText('Great', pad-6, pad + 0*(plotH/4)+4);
+      ctx.fillText('Good', pad-6, pad + 1*(plotH/4)+4);
+      ctx.fillText('Okay', pad-6, pad + 2*(plotH/4)+4);
+      ctx.fillText('Meh', pad-6, pad + 3*(plotH/4)+4);
+      ctx.fillText('Low', pad-6, pad + 4*(plotH/4)+4);
+
+      // X labels
+      ctx.textAlign = 'center';
+      points.forEach((p, idx)=>{
+        const x = pad + (plotW/(points.length-1))*idx;
+        ctx.fillStyle = 'rgba(100,116,139,.9)';
+        if(points.length<=14 || idx%2===0){
+          ctx.fillText(p.label, x, H - pad + 18);
+        }
+      });
+
+      // Line path
+      const validPts = points.map((p, i)=> {
+        const x = pad + (plotW/(points.length-1))*i;
+        const y = p.mood ? pad + (plotH - ((p.mood-1)/4)*plotH) : null;
+        return {x,y, ...p};
+      });
+
+      // Area gradient
+      const grad = ctx.createLinearGradient(0,pad,0,H-pad);
+      grad.addColorStop(0, 'rgba(99,102,241,.25)');
+      grad.addColorStop(1, 'rgba(16,185,129,.05)');
+
+      // Smooth curve with gaps
+      ctx.lineWidth = 2.5 * window.devicePixelRatio;
+      ctx.strokeStyle = 'rgba(99,102,241,1)';
+      ctx.fillStyle = grad;
+
+      ctx.beginPath();
+      let started = false;
+      validPts.forEach((p, i)=>{
+        if(p.y===null){ started = false; return; }
+        if(!started){
+          ctx.moveTo(p.x, p.y);
+          started = true;
+        } else {
+          const prev = validPts[i-1];
+          const cx = (prev.x + p.x)/2;
+          ctx.quadraticCurveTo(cx, prev.y, p.x, p.y);
+        }
+      });
+      ctx.stroke();
+
+      // Fill area
+      ctx.lineTo(W-pad, H-pad);
+      ctx.lineTo(pad, H-pad);
+      ctx.closePath();
+      ctx.globalAlpha = 0.5;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      // Points
+      validPts.forEach(p=>{
+        if(p.y===null) return;
+        ctx.beginPath();
+        ctx.fillStyle = 'white';
+        ctx.strokeStyle = 'rgba(99,102,241,1)';
+        ctx.lineWidth = 2 * window.devicePixelRatio;
+        ctx.arc(p.x, p.y, 4 * window.devicePixelRatio, 0, Math.PI*2);
+        ctx.fill(); ctx.stroke();
+      });
+
+      // Interactions
+      trendCanvas.onmousemove = trendCanvas.ontouchmove = (ev)=>{
+        const rect = trendCanvas.getBoundingClientRect();
+        const clientX = (ev.touches && ev.touches[0] ? ev.touches[0].clientX : ev.clientX);
+        const clientY = (ev.touches && ev.touches[0] ? ev.touches[0].clientY : ev.clientY);
+        const x = (clientX - rect.left) * window.devicePixelRatio;
+        const y = (clientY - rect.top) * window.devicePixelRatio;
+
+        let nearest = null; let dist = Infinity;
+        validPts.forEach(p=>{
+          if(p.y===null) return;
+          const d = Math.hypot(p.x - x, p.y - y);
+          if(d < dist){ dist = d; nearest = p; }
+        });
+        if(nearest && dist < 40 * window.devicePixelRatio){
+          tooltip.classList.remove('hidden');
+          tooltip.style.left = clientX + 'px';
+          tooltip.style.top = (clientY - 12) + 'px';
+          tooltip.textContent = `${nearest.label} • Mood ${nearest.mood}`;
+        } else {
+          tooltip.classList.add('hidden');
+        }
+      };
+      trendCanvas.onmouseleave = ()=> tooltip.classList.add('hidden');
+    }
+
+    // Insights cards
+    function updateInsights(){
+      const lastN = state.entries.slice(0, 30); // recent window
+      entryCount.textContent = lastN.length;
+
+      if(lastN.length){
+        const avg = (lastN.reduce((s,e)=> s+e.mood, 0)/lastN.length).toFixed(1);
+        avgMood.textContent = avg;
+
+        const best = lastN.reduce((b,e)=> !b || e.mood>b.mood ? e : b, null);
+        const d = new Date(best.date);
+        bestDay.textContent = d.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'});
+
+        // top tag
+        const tagCount = {};
+        lastN.forEach(e=> (e.tags||[]).forEach(t=> tagCount[t]=(tagCount[t]||0)+1 ));
+        const top = Object.entries(tagCount).sort((a,b)=> b[1]-a[1])[0];
+        topTag.textContent = top ? top[0] : '—';
+      }else{
+        avgMood.textContent = '—';
+        bestDay.textContent = '—';
+        topTag.textContent = '—';
+      }
+    }
+
+    function renderRecent(){
+      const list = state.entries.slice(0, 6);
+      recentList.innerHTML = '';
+      list.forEach(e=>{
+        const li = document.createElement('li');
+        li.className = 'rounded-xl bg-white/80 border border-slate-100 p-3 flex items-center justify-between gap-3';
+        const date = new Date(e.date);
+        const face = ['😞','😕','🙂','😊','🤩'][e.mood-1] || '🙂';
+        li.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="text-xl">${face}</div>
+            <div>
+              <div class="font-semibold">${date.toLocaleDateString(undefined,{weekday:'short', month:'short', day:'numeric'})}</div>
+              <div class="text-xs text-slate-500">${(e.tags||[]).slice(0,3).join(' • ') || 'No tags'}</div>
+            </div>
+          </div>
+          <div class="text-xs px-2 py-1 rounded-full ${sentimentColor(e.sentiment)}">${e.sentiment}</div>
+        `;
+        recentList.appendChild(li);
+      });
+    }
+
+    function sentimentColor(label){
+      if(label==='Positive') return 'bg-emerald-100 text-emerald-700';
+      if(label==='Negative') return 'bg-rose-100 text-rose-700';
+      return 'bg-amber-100 text-amber-700';
+    }
+
+    // Range controls
+    rangeBtns.forEach(b=>{
+      b.addEventListener('click', ()=>{
+        rangeBtns.forEach(x=> x.classList.remove('bg-white'));
+        b.classList.add('bg-white');
+        state.rangeDays = Number(b.dataset.range);
+        drawTrend();
+      });
+    });
+
+    // Preferences UI
+    function renderFocus(){
+      focusWrap.innerHTML = '';
+      defaultFocus.forEach(f=>{
+        const btn = document.createElement('button');
+        btn.textContent = f;
+        btn.className = 'chip px-3 py-1.5 rounded-full border text-sm ' + (state.prefs.focus.includes(f) ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200 text-slate-700');
+        btn.addEventListener('click', ()=>{
+          const idx = state.prefs.focus.indexOf(f);
+          if(idx>=0) state.prefs.focus.splice(idx,1);
+          else state.prefs.focus.push(f);
+          savePrefs();
+          renderFocus();
+          renderRecommendations();
+        });
+        focusWrap.appendChild(btn);
+      });
+    }
+
+    function applyPrefsUI(){
+      reminderToggle.checked = !!state.prefs.reminder;
+      reminderTimeWrap.classList.toggle('hidden', !state.prefs.reminder);
+      reminderTime.value = state.prefs.time || '09:00';
+    }
+
+    reminderToggle.addEventListener('change', ()=>{
+      state.prefs.reminder = reminderToggle.checked;
+      savePrefs();
+      applyPrefsUI();
+    });
+
+    reminderTime.addEventListener('change', ()=>{
+      state.prefs.time = reminderTime.value || '09:00';
+      savePrefs();
+    });
+
+    // Simple in-page reminder loop (demo only)
+    function startReminderLoop(){
+      setInterval(()=>{
+        if(!state.prefs.reminder) return;
+        const now = new Date();
+        const [hh,mm] = (state.prefs.time||'09:00').split(':').map(Number);
+        if(now.getHours()===hh && now.getMinutes()===mm && now.getSeconds()<5){
+          reminderBanner.classList.remove('hidden');
+        }
+      }, 1000);
+    }
+    dismissReminder.addEventListener('click', ()=>{
+      reminderBanner.classList.add('hidden');
+      // jump to check-in tab
+      document.querySelector('button[data-tab="checkin"]').click();
+    });
+
+    // Export / Import / Reset
+    exportBtn.addEventListener('click', ()=>{
+      const blob = new Blob([JSON.stringify({entries: state.entries, prefs: state.prefs}, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `menta-export-${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    importBtn.addEventListener('click', ()=> importFile.click());
+    importFile.addEventListener('change', ()=>{
+      const file = importFile.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        try{
+          const data = JSON.parse(reader.result);
+          if(data.entries && Array.isArray(data.entries)){
+            state.entries = data.entries;
+            saveEntries();
+          }
+          if(data.prefs){
+            state.prefs = {...state.prefs, ...data.prefs};
+            savePrefs();
+          }
+          flashMessage('Import successful.');
+          init();
+        }catch(e){ flashMessage('Import failed.'); }
+      };
+      reader.readAsText(file);
+    });
+
+    resetBtn.addEventListener('click', ()=>{
+      if(confirm('This will clear all your data. Continue?')){
+        state.entries = [];
+        saveEntries();
+        // keep prefs
+        init();
+      }
+    });
+
+    // Helpers
+    function flashMessage(text){
+      const m = document.createElement('div');
+      m.className = 'fixed left-1/2 -translate-x-1/2 bottom-6 z-50 px-4 py-2 rounded-lg bg-slate-900 text-white text-sm shadow-lg';
+      m.textContent = text;
+      document.body.appendChild(m);
+      setTimeout(()=> m.remove(), 2200);
+    }
+
+    function cryptoRandomId(){
+      if(window.crypto && crypto.getRandomValues){
+        const a = new Uint32Array(2);
+        crypto.getRandomValues(a);
+        return Array.from(a).map(x=> x.toString(36)).join('');
+      }
+      return Math.random().toString(36).slice(2) + Date.now().toString(36);
+    }
+
+    function setupEvents(){
+      window.addEventListener('resize', ()=>{
+        if(!tabSections.insights.classList.contains('hidden')) drawTrend();
+      });
+    }
+  </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97e67075918a9f43',t:'MTc1Nzc1Mzg3MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
